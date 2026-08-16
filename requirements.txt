@@ -1,0 +1,7 @@
+requests
+beautifulsoup4
+dnspython
+python-dotenv
+openpyxl
+ddgs
+py3-validate-email
