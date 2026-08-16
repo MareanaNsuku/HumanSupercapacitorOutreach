@@ -211,16 +211,31 @@ LinkedIn: <a href="https://www.linkedin.com/in/nsukumareana/">https://www.linked
 
 # ========== DUCKDUCKGO HTML LIVE SEARCH ==========
 def search_duckduckgo(query, max_results=60):
+    """Fetch DuckDuckGo search results directly via HTML (no ddgs)."""
     links = []
-    try:
-        from ddgs import DDGS
-        with DDGS() as ddgs:
-            for r in ddgs.text(query, region='wt-wt', max_results=max_results):
-                href = r.get('href', '')
-                if href.startswith('http'):
-                    links.append(href)
-    except Exception as e:
-        print(f'   Search error: {e}')
+    headers = {'User-Agent': random.choice(USER_AGENTS)}
+    urls_to_try = [
+        f'https://lite.duckduckgo.com/lite/?q={urllib.parse.quote(query)}',
+        f'https://html.duckduckgo.com/html/?q={urllib.parse.quote(query)}'
+    ]
+    for url in urls_to_try:
+        try:
+            resp = requests.get(url, headers=headers, timeout=20)
+            if resp.status_code == 200:
+                soup = BeautifulSoup(resp.text, 'html.parser')
+                for a in soup.select('a.result-link'):
+                    href = a.get('href', '')
+                    if href.startswith('http'):
+                        links.append(href)
+                for a in soup.select('a.result__a'):
+                    href = a.get('href', '')
+                    if href.startswith('http'):
+                        links.append(href)
+                if links:
+                    break
+        except Exception as e:
+            print(f'   Search error ({url}): {e}')
+            continue
     return links[:max_results]
 
 def search_companies(queries, total_wanted=50):
