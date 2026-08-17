@@ -298,6 +298,34 @@ def search_companies(queries, total_wanted=50):
     print(f'✅ Live search found {len(found)} companies.')
     return found
 
+
+def load_local_companies():
+    """Load companies from CSV file, return list of (name, url)."""
+    companies = []
+    if os.path.isfile('company_websites.csv'):
+        import csv
+        with open('company_websites.csv', 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                name = row.get('company_name', '').strip()
+                url = row.get('website', '').strip()
+                if name and url:
+                    companies.append((name, url))
+    return companies
+
+def get_local_batch(count):
+    """Return up to count companies from local list not yet scraped."""
+    companies = load_local_companies()
+    random.shuffle(companies)
+    available = []
+    for name, url in companies:
+        domain = url.split('/')[2].replace('www.', '')
+        if not already_scraped_domain(domain):
+            available.append((name, url))
+            if len(available) >= count:
+                break
+    return available
+
 def main():
     init_db()
     print('🚀 Human Supercapacitance Outreach – GitHub Actions mode…')
@@ -338,7 +366,13 @@ def main():
     ]
     random.shuffle(queries)
 
-    companies = search_companies(queries, total_wanted=BATCH_SIZE)
+    print('📂 Checking local company list…')
+    companies = get_local_batch(BATCH_SIZE)
+    if companies:
+        print(f'   Found {len(companies)} companies from local list.')
+    else:
+        print('   Local list exhausted. Falling back to live search…')
+        companies = search_companies(queries, total_wanted=BATCH_SIZE)
     if not companies:
         print('❌ No companies found today. Try again tomorrow.')
         return
