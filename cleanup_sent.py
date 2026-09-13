@@ -52,6 +52,18 @@ for num in sent_ids:
         typ, msg_data = M.fetch(num, '(RFC822)')
         if typ != 'OK':
             continue
+
+        # --- Archive safety check ---
+        # Fetch Gmail labels for this message; if \Sent is missing, it's been archived
+        typ_lbl, lbl_data = M.fetch(num, '(X-GM-LABELS)')
+        if typ_lbl == 'OK' and lbl_data and lbl_data[0]:
+            labels_str = lbl_data[0].decode('utf-8', 'ignore') if isinstance(lbl_data[0], bytes) else str(lbl_data[0])
+            if '\\Sent' not in labels_str and 'Sent' not in labels_str:
+                # Archived – skip deletion
+                kept += 1
+                continue
+        # ---------------------------
+
         msg = email.message_from_bytes(msg_data[0][1])
         subject = decode_mime(msg.get('Subject', ''))
         date_str = msg.get('Date', '')
