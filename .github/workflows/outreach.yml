@@ -37,6 +37,12 @@ jobs:
           CC_EMAIL: ${{ secrets.CC_EMAIL }}
         run: python auto_outreach_github.py
 
+      - name: Delete unreplied sent emails from Gmail
+        env:
+          SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        run: python cleanup_sent.py || echo "Cleanup failed; continuing"
+
       - name: Commit updated database back to repo
         run: |
           git config --local user.email "action@github.com"
