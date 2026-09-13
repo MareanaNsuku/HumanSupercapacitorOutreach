@@ -43,7 +43,7 @@ if typ != 'OK':
 sent_ids = data[0].split()
 deleted = 0
 kept = 0
-cutoff = datetime.now() - timedelta(days=2)
+cutoff = datetime.now() - timedelta(days=0)
 
 BS = chr(92)  # backslash
 
