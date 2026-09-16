@@ -210,49 +210,60 @@ LinkedIn: <a href="https://www.linkedin.com/in/nsukumareana/">https://www.linked
         return False, str(e)
 
 # ========== DUCKDUCKGO HTML LIVE SEARCH ==========
-def search_duckduckgo(query, max_results=60):
-    """Search Bing first, then DuckDuckGo HTML as fallback."""
+def search_duckduckgo(query, max_results=40):
+    """Multi-engine search: ddgs library -> Bing HTML -> DuckDuckGo HTML."""
     links = []
     headers = {'User-Agent': random.choice(USER_AGENTS)}
-    
-    # 1. Bing
+
+    # ---- 1. ddgs library (primary, reliable) ----
     try:
-        for start in range(0, 30, 10):
-            bing_url = f'https://www.bing.com/search?q={urllib.parse.quote(query + " .za")}&count=10&first={start}'
-            resp = requests.get(bing_url, headers=headers, timeout=20)
-            if resp.status_code == 200:
-                soup = BeautifulSoup(resp.text, 'html.parser')
-                for a in soup.select('li.b_algo h2 a'):
-                    href = a.get('href', '')
-                    if href.startswith('http'):
-                        links.append(href)
-                if len(links) >= max_results:
-                    break
-            time.sleep(random.uniform(1, 3))
+        from ddgs import DDGS
+        with DDGS() as ddgs:
+            for r in ddgs.text(query, region='za-za', max_results=max_results):
+                href = r.get('href') or r.get('url') or ''
+                if href.startswith('http'):
+                    links.append(href)
+        if links:
+            print(f'      ddgs found {len(links)} results')
+            return links[:max_results]
     except Exception as e:
-        print(f'   Bing error: {e}')
-    
-    # 2. DuckDuckGo HTML (fallback)
-    if len(links) < max_results:
-        for page in range(3):
-            ddg_url = f'https://html.duckduckgo.com/html/?q={urllib.parse.quote(query)}&s={page * 30}'
-            try:
-                resp = requests.get(ddg_url, headers=headers, timeout=20)
-                if resp.status_code == 200:
-                    soup = BeautifulSoup(resp.text, 'html.parser')
-                    for a in soup.select('a.result__a'):
-                        href = a.get('href', '')
-                        if href.startswith('http'):
-                            links.append(href)
-                    if not soup.select('a.result__a'):
-                        break
-                else:
-                    break
-                time.sleep(random.uniform(2, 4))
-            except Exception as e:
-                print(f'   DuckDuckGo error (page {page}): {e}')
-                break
-    
+        print(f'      ddgs error: {e}')
+
+    time.sleep(random.uniform(2, 4))
+
+    # ---- 2. Bing HTML (fallback) ----
+    try:
+        bing_url = f'https://www.bing.com/search?q={urllib.parse.quote(query)}&count=30&setlang=en'
+        resp = requests.get(bing_url, headers=headers, timeout=20)
+        if resp.status_code == 200:
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            for a in soup.select('li.b_algo h2 a'):
+                href = a.get('href', '')
+                if href.startswith('http'):
+                    links.append(href)
+            if links:
+                print(f'      Bing found {len(links)} results')
+                return links[:max_results]
+    except Exception as e:
+        print(f'      Bing error: {e}')
+
+    time.sleep(random.uniform(2, 4))
+
+    # ---- 3. DuckDuckGo HTML (last resort) ----
+    try:
+        ddg_url = f'https://html.duckduckgo.com/html/?q={urllib.parse.quote(query)}'
+        resp = requests.get(ddg_url, headers=headers, timeout=20)
+        if resp.status_code == 200:
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            for a in soup.select('a.result__a'):
+                href = a.get('href', '')
+                if href.startswith('http'):
+                    links.append(href)
+            if links:
+                print(f'      DuckDuckGo found {len(links)} results')
+    except Exception as e:
+        print(f'      DuckDuckGo error: {e}')
+
     return links[:max_results]
 def search_companies(queries, total_wanted=50):
     found = []
