@@ -211,29 +211,30 @@ LinkedIn: <a href="https://www.linkedin.com/in/nsukumareana/">https://www.linked
 
 # ========== DUCKDUCKGO HTML LIVE SEARCH ==========
 def search_duckduckgo(query, max_results=40):
-    """Multi-engine search: ddgs library -> Bing HTML -> DuckDuckGo HTML."""
+    """Aggressive multi-engine search forced to South African domains."""
     links = []
     headers = {'User-Agent': random.choice(USER_AGENTS)}
 
-    # ---- 1. ddgs library (primary, reliable) ----
-    try:
-        from ddgs import DDGS
-        with DDGS() as ddgs:
-            for r in ddgs.text(query, region='za-za', max_results=max_results):
-                href = r.get('href') or r.get('url') or ''
-                if href.startswith('http'):
-                    links.append(href)
-        if links:
-            print(f'      ddgs found {len(links)} results')
-            return links[:max_results]
-    except Exception as e:
-        print(f'      ddgs error: {e}')
+    # 1. ddgs with multiple backends
+    for backend in ['duckduckgo', 'brave', 'google', 'mojeek', 'yahoo']:
+        try:
+            from ddgs import DDGS
+            with DDGS() as ddgs:
+                for r in ddgs.text(query + ' site:za', region='za-za', max_results=max_results, backend=backend):
+                    href = r.get('href') or r.get('url') or ''
+                    if href.startswith('http'):
+                        links.append(href)
+            if links:
+                print(f'      ddgs ({backend}) found {len(links)} results')
+                return links[:max_results]
+        except Exception as e:
+            msg = str(e)[:60]
+            print(f'      ddgs ({backend}) failed: {msg}')
+        time.sleep(random.uniform(1, 2))
 
-    time.sleep(random.uniform(2, 4))
-
-    # ---- 2. Bing HTML (fallback) ----
+    # 2. Bing with site:.za
     try:
-        bing_url = f'https://www.bing.com/search?q={urllib.parse.quote(query)}&count=30&setlang=en'
+        bing_url = f'https://www.bing.com/search?q={urllib.parse.quote(query)}%20site%3A.za&count=30&setlang=en'
         resp = requests.get(bing_url, headers=headers, timeout=20)
         if resp.status_code == 200:
             soup = BeautifulSoup(resp.text, 'html.parser')
@@ -245,24 +246,42 @@ def search_duckduckgo(query, max_results=40):
                 print(f'      Bing found {len(links)} results')
                 return links[:max_results]
     except Exception as e:
-        print(f'      Bing error: {e}')
+        print(f'      Bing error: {str(e)[:60]}')
 
     time.sleep(random.uniform(2, 4))
 
-    # ---- 3. DuckDuckGo HTML (last resort) ----
+    # 3. Yandex with site:.za
     try:
-        ddg_url = f'https://html.duckduckgo.com/html/?q={urllib.parse.quote(query)}'
-        resp = requests.get(ddg_url, headers=headers, timeout=20)
+        yandex_url = f'https://yandex.com/search/?text={urllib.parse.quote(query)}%20site%3A.za'
+        resp = requests.get(yandex_url, headers=headers, timeout=20)
         if resp.status_code == 200:
             soup = BeautifulSoup(resp.text, 'html.parser')
-            for a in soup.select('a.result__a'):
+            for a in soup.select('a.Link_theme_normal, a.OrganicTitle-Link, a.organic__url'):
                 href = a.get('href', '')
                 if href.startswith('http'):
                     links.append(href)
             if links:
-                print(f'      DuckDuckGo found {len(links)} results')
+                print(f'      Yandex found {len(links)} results')
+                return links[:max_results]
     except Exception as e:
-        print(f'      DuckDuckGo error: {e}')
+        print(f'      Yandex error: {str(e)[:60]}')
+
+    time.sleep(random.uniform(2, 4))
+
+    # 4. Mojeek with site:.za
+    try:
+        mojeek_url = f'https://www.mojeek.com/search?q={urllib.parse.quote(query)}%20site%3A.za'
+        resp = requests.get(mojeek_url, headers=headers, timeout=20)
+        if resp.status_code == 200:
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            for a in soup.select('a.ob, ul.results-standard li a.title'):
+                href = a.get('href', '')
+                if href.startswith('http'):
+                    links.append(href)
+            if links:
+                print(f'      Mojeek found {len(links)} results')
+    except Exception as e:
+        print(f'      Mojeek error: {str(e)[:60]}')
 
     return links[:max_results]
 def search_companies(queries, total_wanted=50):
@@ -377,13 +396,11 @@ def main():
     ]
     random.shuffle(queries)
 
-    print('📂 Checking local company list…')
-    companies = get_local_batch(BATCH_SIZE)
-    if companies:
-        print(f'   Found {len(companies)} companies from local list.')
-    else:
-        print('   Local list exhausted. Falling back to live search…')
-        companies = search_companies(queries, total_wanted=BATCH_SIZE)
+    print('🔎 Starting live search (primary source)…')
+    companies = search_companies(queries, total_wanted=BATCH_SIZE)
+    if not companies:
+        print('   Live search yielded 0. Falling back to local list…')
+        companies = get_local_batch(BATCH_SIZE)
     if not companies:
         print('❌ No companies found today. Try again tomorrow.')
         return
