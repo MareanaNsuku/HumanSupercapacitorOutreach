@@ -136,13 +136,13 @@ def send_email(to_addr, company_name):
     drive_link = GOOGLE_DRIVE_LINK
     html_body = f"""<html><body>
 <p>Dear {company_name},</p>
-<p>The project was founded by <strong>Mandlenkosi Sindane</strong>, a Mechanical &amp; Mechatronics Engineering student at the Cape Peninsula University of Technology. I, <strong>Nsuku Mareana</strong>, a Mechanical &amp; Mechatronics Engineering student at the University of Cape Town, am collaborating with him. Together, we have developed the <strong>Human-Supercapacitance Project</strong> – a groundbreaking clean-energy device that turns human pedalling into instant electrical power for the CPUT STEM Club Expo Competition.</p>
+<p>The project was founded by <strong>Mandlenkosi Sindane</strong>, a Mechanical &amp; Mechatronics Engineering student at the Cape Peninsula University of Technology. I, <strong>Nsuku Mareana</strong>, a Mechanical &amp; Mechatronics Engineering student at the University of Cape Town, am collaborating with him. Together, we have developed the <strong>Human-Supercapacitance Project</strong> – a groundbreaking clean-energy device that turns human pedalling into instant electrical power as an independent, non-academic project driven by our own passion for engineering and clean energy.</p>
 <h3>About the Project:</h3>
 <p>Our device captures mechanical energy from pedalling – similar to a stationary bike – and converts it instantly into electrical energy stored in supercapacitors. Unlike conventional batteries, supercapacitors charge in seconds, deliver high bursts of power, and last for hundreds of thousands of cycles without degradation. The system uses an AC generator, a rectifier to convert AC to DC, an Arduino microcontroller to manage power flow, and an LCD display to show real‑time energy metrics. A current sensor monitors the electricity flowing from the generator to the supercapacitor bank, ensuring safe and efficient energy transfer.</p>
 <h3>Why This Matters:</h3>
 <p>In emergency situations (load‑shedding, natural disasters, rural clinics), reliable power is critical. Our charger can be rapidly deployed to power defibrillators, oxygen concentrators, communication devices, LED lights, or charge mobile phones – all without relying on the electrical grid. It also works perfectly in gyms, off‑grid communities, and outdoor settings where human motion is abundant.</p>
-<h3>Competition &amp; Vision:</h3>
-<p>We are presenting this prototype at the CPUT STEM Club Expo Competition and plan to publish our findings openly to inspire further innovation in human‑powered clean energy. Our goal is to demonstrate a scalable, sustainable alternative to traditional battery banks that reduces e‑waste and provides instant, on‑demand power.</p>
+<h3>Our Vision:</h3>
+<p>This is an independent, non‑academic personal project developed out of our own passion for clean energy and engineering. We are building this prototype entirely on our own initiative and plan to share our findings openly to inspire further innovation in human‑powered clean energy. Our goal is to demonstrate a scalable, sustainable alternative to traditional battery banks that reduces e‑waste and provides instant, on‑demand power.</p>
 <h3>How You Can Help:</h3>
 <p>We are looking for:
 <br>- Expert advice on energy‑harvesting gym equipment or human‑powered generators
