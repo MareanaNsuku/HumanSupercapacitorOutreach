@@ -21,7 +21,7 @@ BS = chr(92)
 
 # ---- Step 1: reply thread IDs (Gmail native search) ----
 M.select('INBOX', readonly=True)
-typ, data = M.search(None, 'X-GM-RAW', 'subject:Human-Supercapacitance -label:sent')
+typ, data = M.search(None, 'X-GM-RAW', '"subject:Human-Supercapacitance -label:sent"')
 reply_threads = set()
 if typ == 'OK' and data[0]:
     ids = data[0].split()
@@ -46,7 +46,7 @@ print('Cleanup: unique reply threads = ' + str(len(reply_threads)))
 
 # ---- Step 2: old sent emails (Gmail native search, older than 2 days) ----
 M.select('"[Gmail]/Sent Mail"')
-typ, data = M.search(None, 'X-GM-RAW', 'subject:Human-Supercapacitance older_than:2d')
+typ, data = M.search(None, 'X-GM-RAW', '"subject:Human-Supercapacitance older_than:2d"')
 old_ids = data[0].split() if data[0] else []
 print('Cleanup: old sent emails to check = ' + str(len(old_ids)))
 
