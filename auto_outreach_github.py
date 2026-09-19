@@ -211,31 +211,28 @@ LinkedIn: <a href="https://www.linkedin.com/in/nsukumareana/">https://www.linked
 
 # ========== DUCKDUCKGO HTML LIVE SEARCH ==========
 def search_duckduckgo(query, max_results=40):
-    """Aggressive multi-engine search forced to South African domains."""
+    """Fast multi-engine search: ddgs once, then Bing, no long retries."""
     links = []
     headers = {'User-Agent': random.choice(USER_AGENTS)}
 
-    # 1. ddgs with multiple backends
-    for backend in ['duckduckgo', 'brave', 'google', 'mojeek', 'yahoo']:
-        try:
-            from ddgs import DDGS
-            with DDGS() as ddgs:
-                for r in ddgs.text(query + ' site:za', region='za-za', max_results=max_results, backend=backend):
-                    href = r.get('href') or r.get('url') or ''
-                    if href.startswith('http'):
-                        links.append(href)
-            if links:
-                print(f'      ddgs ({backend}) found {len(links)} results')
-                return links[:max_results]
-        except Exception as e:
-            msg = str(e)[:60]
-            print(f'      ddgs ({backend}) failed: {msg}')
-        time.sleep(random.uniform(1, 2))
-
-    # 2. Bing with site:.za
+    # 1. ddgs — single attempt, no backend cycling
     try:
-        bing_url = f'https://www.bing.com/search?q={urllib.parse.quote(query)}%20site%3A.za&count=30&setlang=en'
-        resp = requests.get(bing_url, headers=headers, timeout=20)
+        from ddgs import DDGS
+        with DDGS() as ddgs:
+            for r in ddgs.text(query + ' site:za', region='za-za', max_results=max_results):
+                href = r.get('href') or r.get('url') or ''
+                if href.startswith('http'):
+                    links.append(href)
+        if links:
+            print(f'      ddgs found {len(links)} results')
+            return links[:max_results]
+    except Exception as e:
+        print(f'      ddgs failed: {str(e)[:40]}')
+
+    # 2. Bing with site:.za — primary fallback
+    try:
+        bing_url = f'https://www.bing.com/search?q={urllib.parse.quote(query + " site:.za")}&count=30'
+        resp = requests.get(bing_url, headers=headers, timeout=15)
         if resp.status_code == 200:
             soup = BeautifulSoup(resp.text, 'html.parser')
             for a in soup.select('li.b_algo h2 a'):
@@ -244,44 +241,8 @@ def search_duckduckgo(query, max_results=40):
                     links.append(href)
             if links:
                 print(f'      Bing found {len(links)} results')
-                return links[:max_results]
     except Exception as e:
-        print(f'      Bing error: {str(e)[:60]}')
-
-    time.sleep(random.uniform(2, 4))
-
-    # 3. Yandex with site:.za
-    try:
-        yandex_url = f'https://yandex.com/search/?text={urllib.parse.quote(query)}%20site%3A.za'
-        resp = requests.get(yandex_url, headers=headers, timeout=20)
-        if resp.status_code == 200:
-            soup = BeautifulSoup(resp.text, 'html.parser')
-            for a in soup.select('a.Link_theme_normal, a.OrganicTitle-Link, a.organic__url'):
-                href = a.get('href', '')
-                if href.startswith('http'):
-                    links.append(href)
-            if links:
-                print(f'      Yandex found {len(links)} results')
-                return links[:max_results]
-    except Exception as e:
-        print(f'      Yandex error: {str(e)[:60]}')
-
-    time.sleep(random.uniform(2, 4))
-
-    # 4. Mojeek with site:.za
-    try:
-        mojeek_url = f'https://www.mojeek.com/search?q={urllib.parse.quote(query)}%20site%3A.za'
-        resp = requests.get(mojeek_url, headers=headers, timeout=20)
-        if resp.status_code == 200:
-            soup = BeautifulSoup(resp.text, 'html.parser')
-            for a in soup.select('a.ob, ul.results-standard li a.title'):
-                href = a.get('href', '')
-                if href.startswith('http'):
-                    links.append(href)
-            if links:
-                print(f'      Mojeek found {len(links)} results')
-    except Exception as e:
-        print(f'      Mojeek error: {str(e)[:60]}')
+        print(f'      Bing failed: {str(e)[:40]}')
 
     return links[:max_results]
 def search_companies(queries, total_wanted=50):
@@ -305,7 +266,7 @@ def search_companies(queries, total_wanted=50):
     for q in queries:
         print(f'🔎 Searching: {q}')
         results = search_duckduckgo(q, max_results=60)
-        time.sleep(random.uniform(3, 6))
+        time.sleep(random.uniform(1, 2))
         for url in results:
             domain = url.split('/')[2].replace('www.', '')
             # ----- ONLY South African domains -----
