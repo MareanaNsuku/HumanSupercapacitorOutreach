@@ -49,6 +49,7 @@ jobs:
           git config --local user.name "GitHub Action"
           git add data/sent_emails.db
           git commit -m "Update sent emails database [skip ci]" || echo "No changes to commit"
+          git pull --rebase --autostash https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}.git main || true
           git push https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
