@@ -211,11 +211,11 @@ LinkedIn: <a href="https://www.linkedin.com/in/nsukumareana/">https://www.linked
 
 # ========== DUCKDUCKGO HTML LIVE SEARCH ==========
 def search_duckduckgo(query, max_results=40):
-    """Fast multi-engine search: ddgs once, then Bing, no long retries."""
+    """Multi-engine SA search: ddgs, Bing, Startpage, Brave, Mojeek."""
     links = []
     headers = {'User-Agent': random.choice(USER_AGENTS)}
 
-    # 1. ddgs — single attempt, no backend cycling
+    # 1. ddgs
     try:
         from ddgs import DDGS
         with DDGS() as ddgs:
@@ -224,14 +224,14 @@ def search_duckduckgo(query, max_results=40):
                 if href.startswith('http'):
                     links.append(href)
         if links:
-            print(f'      ddgs found {len(links)} results')
+            print('      ddgs found ' + str(len(links)) + ' results')
             return links[:max_results]
     except Exception as e:
-        print(f'      ddgs failed: {str(e)[:40]}')
+        print('      ddgs failed: ' + str(e)[:40])
 
-    # 2. Bing with site:.za — primary fallback
+    # 2. Bing
     try:
-        bing_url = f'https://www.bing.com/search?q={urllib.parse.quote(query + " site:.za")}&count=30'
+        bing_url = 'https://www.bing.com/search?q=' + urllib.parse.quote(query + ' site:.za') + '&count=30'
         resp = requests.get(bing_url, headers=headers, timeout=15)
         if resp.status_code == 200:
             soup = BeautifulSoup(resp.text, 'html.parser')
@@ -240,9 +240,41 @@ def search_duckduckgo(query, max_results=40):
                 if href.startswith('http'):
                     links.append(href)
             if links:
-                print(f'      Bing found {len(links)} results')
+                print('      Bing found ' + str(len(links)) + ' results')
+                return links[:max_results]
     except Exception as e:
-        print(f'      Bing failed: {str(e)[:40]}')
+        print('      Bing failed: ' + str(e)[:40])
+
+    # 3. Startpage
+    try:
+        sp_url = 'https://www.startpage.com/sp/search?query=' + urllib.parse.quote(query + ' site:.za')
+        resp = requests.get(sp_url, headers=headers, timeout=15)
+        if resp.status_code == 200:
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            for a in soup.select('a.result-link, a.w-gl__result-title, a.result-title'):
+                href = a.get('href', '')
+                if href.startswith('http'):
+                    links.append(href)
+            if links:
+                print('      Startpage found ' + str(len(links)) + ' results')
+                return links[:max_results]
+    except Exception as e:
+        print('      Startpage failed: ' + str(e)[:40])
+
+    # 4. Brave
+    try:
+        brave_url = 'https://search.brave.com/search?q=' + urllib.parse.quote(query + ' site:.za')
+        resp = requests.get(brave_url, headers=headers, timeout=15)
+        if resp.status_code == 200:
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            for a in soup.select('a.heading-serpresult, a.result-header, a.h'):
+                href = a.get('href', '')
+                if href.startswith('http'):
+                    links.append(href)
+            if links:
+                print('      Brave found ' + str(len(links)) + ' results')
+    except Exception as e:
+        print('      Brave failed: ' + str(e)[:40])
 
     return links[:max_results]
 def search_companies(queries, total_wanted=50):
