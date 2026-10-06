@@ -402,11 +402,24 @@ def main():
     ]
     random.shuffle(queries)
 
-    print('🔎 Starting live search (primary source)…')
+    print('🔎 Starting live search…')
     companies = search_companies(queries, total_wanted=BATCH_SIZE)
-    if not companies:
-        print('   Live search yielded 0. Falling back to local list…')
-        companies = get_local_batch(BATCH_SIZE)
+    print(f'   Live search gave {len(companies)} companies.')
+
+    # ALWAYS fill remaining slots from CSV
+    if len(companies) < BATCH_SIZE:
+        remaining = BATCH_SIZE - len(companies)
+        print(f'   Filling {remaining} slots from local CSV…')
+        csv_companies = get_local_batch(remaining)
+        # Deduplicate against live-search results
+        live_domains = {u.replace('https://','').replace('http://','').replace('www.','').split('/')[0] for _, u in companies}
+        for name, url in csv_companies:
+            d = url.replace('https://','').replace('http://','').replace('www.','').split('/')[0]
+            if d not in live_domains:
+                companies.append((name, url))
+                live_domains.add(d)
+        print(f'   Added {len(companies) - (BATCH_SIZE - remaining)} from CSV.')
+
     if not companies:
         print('❌ No companies found today. Try again tomorrow.')
         return
