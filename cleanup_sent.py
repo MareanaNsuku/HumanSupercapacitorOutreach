@@ -35,7 +35,7 @@ def domain_of(addr):
 
 # Step 1: reply senders from Inbox
 M.select('INBOX', readonly=True)
-typ, data = M.search(None, 'X-GM-RAW', '"subject:Human-Supercapacitance -label:sent"')
+typ, data = M.search(None, 'X-GM-RAW', '"subject:Human-Supercapacitance "')
 inbox_ids = data[0].split() if data[0] else []
 print('Cleanup: reply emails in Inbox = ' + str(len(inbox_ids)))
 
