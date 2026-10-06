@@ -5,3 +5,5 @@ python-dotenv
 openpyxl
 ddgs
 py3-validate-email
+gmbscraper
+playwright

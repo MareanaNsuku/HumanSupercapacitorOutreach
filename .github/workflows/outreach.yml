@@ -27,6 +27,12 @@ jobs:
         run: |
           pip install -r requirements.txt
 
+      - name: Install Playwright browsers
+        run: |
+          pip install playwright
+          playwright install chromium
+          playwright install-deps chromium || true
+
       - name: Run outreach script
         env:
           SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
