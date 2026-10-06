@@ -7,3 +7,4 @@ ddgs
 py3-validate-email
 gmbscraper
 playwright
+swiftshadow

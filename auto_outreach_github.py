@@ -211,70 +211,72 @@ LinkedIn: <a href="https://www.linkedin.com/in/nsukumareana/">https://www.linked
 
 # ========== DUCKDUCKGO HTML LIVE SEARCH ==========
 def search_duckduckgo(query, max_results=40):
-    """Multi-engine SA search: ddgs, Bing, Startpage, Brave, Mojeek."""
+    """Multi-engine search with swiftshadow proxy rotation."""
     links = []
     headers = {'User-Agent': random.choice(USER_AGENTS)}
 
-    # 1. ddgs
+    # Initialize proxy rotator (fails silently if network issue)
     try:
-        from ddgs import DDGS
-        with DDGS() as ddgs:
-            for r in ddgs.text(query + ' site:za', region='za-za', max_results=max_results):
-                href = r.get('href') or r.get('url') or ''
-                if href.startswith('http'):
-                    links.append(href)
-        if links:
-            print('      ddgs found ' + str(len(links)) + ' results')
-            return links[:max_results]
-    except Exception as e:
-        print('      ddgs failed: ' + str(e)[:40])
+        from swiftshadow import Swiftshadow
+        sw = Swiftshadow(proxies=50)
+    except Exception:
+        sw = None
 
-    # 2. Bing
+    def _get_proxy():
+        if not sw:
+            return None
+        try:
+            p = sw.get_proxy()
+            return {'http': p, 'https': p} if p else None
+        except Exception:
+            return None
+
+    # 1. Bing (with proxy rotation)
     try:
         bing_url = 'https://www.bing.com/search?q=' + urllib.parse.quote(query + ' site:.za') + '&count=30'
-        resp = requests.get(bing_url, headers=headers, timeout=15)
+        resp = requests.get(bing_url, headers=headers, proxies=_get_proxy(), timeout=20)
         if resp.status_code == 200:
             soup = BeautifulSoup(resp.text, 'html.parser')
             for a in soup.select('li.b_algo h2 a'):
                 href = a.get('href', '')
                 if href.startswith('http'):
                     links.append(href)
-            if links:
-                print('      Bing found ' + str(len(links)) + ' results')
-                return links[:max_results]
+        if links:
+            print('      Bing found ' + str(len(links)) + ' results')
+            return links[:max_results]
     except Exception as e:
         print('      Bing failed: ' + str(e)[:40])
 
-    # 3. Startpage
+    # 2. Bing without proxy
+    try:
+        bing_url = 'https://www.bing.com/search?q=' + urllib.parse.quote(query + ' site:.za') + '&count=30'
+        resp = requests.get(bing_url, headers=headers, timeout=20)
+        if resp.status_code == 200:
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            for a in soup.select('li.b_algo h2 a'):
+                href = a.get('href', '')
+                if href.startswith('http'):
+                    links.append(href)
+        if links:
+            print('      Bing (direct) found ' + str(len(links)) + ' results')
+            return links[:max_results]
+    except Exception as e:
+        print('      Bing direct failed: ' + str(e)[:40])
+
+    # 3. Startpage fallback
     try:
         sp_url = 'https://www.startpage.com/sp/search?query=' + urllib.parse.quote(query + ' site:.za')
-        resp = requests.get(sp_url, headers=headers, timeout=15)
+        resp = requests.get(sp_url, headers=headers, proxies=_get_proxy(), timeout=20)
         if resp.status_code == 200:
             soup = BeautifulSoup(resp.text, 'html.parser')
             for a in soup.select('a.result-link, a.w-gl__result-title, a.result-title'):
                 href = a.get('href', '')
                 if href.startswith('http'):
                     links.append(href)
-            if links:
-                print('      Startpage found ' + str(len(links)) + ' results')
-                return links[:max_results]
+        if links:
+            print('      Startpage found ' + str(len(links)) + ' results')
     except Exception as e:
         print('      Startpage failed: ' + str(e)[:40])
-
-    # 4. Brave
-    try:
-        brave_url = 'https://search.brave.com/search?q=' + urllib.parse.quote(query + ' site:.za')
-        resp = requests.get(brave_url, headers=headers, timeout=15)
-        if resp.status_code == 200:
-            soup = BeautifulSoup(resp.text, 'html.parser')
-            for a in soup.select('a.heading-serpresult, a.result-header, a.h'):
-                href = a.get('href', '')
-                if href.startswith('http'):
-                    links.append(href)
-            if links:
-                print('      Brave found ' + str(len(links)) + ' results')
-    except Exception as e:
-        print('      Brave failed: ' + str(e)[:40])
 
     return links[:max_results]
 def search_companies(queries, total_wanted=50):
