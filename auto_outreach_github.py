@@ -302,17 +302,37 @@ def search_companies(queries, total_wanted=50):
         results = search_duckduckgo(q, max_results=60)
         time.sleep(random.uniform(1, 2))
         for url in results:
-            domain = url.split('/')[2].replace('www.', '')
-            # ----- ONLY South African domains -----
-            if not domain.endswith('.za'):
+            try:
+                parsed = urllib.parse.urlparse(url)
+                domain = parsed.netloc.replace('www.', '')
+                path = parsed.path or '/'
+            except Exception:
                 continue
-            # ----- Exclude educational institutions -----
-            if domain.endswith('.ac.za') or domain.endswith('.edu.za') or domain.endswith('.school.za') or domain.endswith('.college.za'):
+
+            # Only .co.za or common commercial domains
+            if not (domain.endswith('.co.za') or domain.endswith('.com') or domain.endswith('.africa')):
                 continue
+
+            # Skip educational and gov
+            if any(domain.endswith(x) for x in ['.ac.za', '.edu.za', '.school.za', '.gov.za']):
+                continue
+
+            # Skip junk paths (news, blog, articles, categories)
+            junk_paths = ['/news/', '/blog/', '/article/', '/category/', '/tag/',
+                          '/2024/', '/2025/', '/2026/', '/author/', '/top-10-',
+                          '/best-', '/list-of-', '/guide-to', '/how-to-']
+            if any(j in path.lower() for j in junk_paths):
+                continue
+
+            # Skip junk domains
             if any(ex in domain for ex in excluded):
                 continue
+
             if domain in domains_seen or already_scraped_domain(domain):
                 continue
+
+            # Prefer homepage — reconstruct base URL
+            url = f"https://{domain}"
             domains_seen.add(domain)
             company_name = domain.split('.')[0].capitalize()
             found.append((company_name, url))
